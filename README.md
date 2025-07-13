@@ -82,4 +82,14 @@ This project bridges the gap between theoretical DSP knowledge and practical har
 
 
 ---
+###OUTPUT:
 
+<img width="968" height="707" alt="Image" src="https://github.com/user-attachments/assets/00b0f391-f554-4689-9949-fb1385120264" />
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+###OUTPUT WAVEFORM:
+
+<img width="1895" height="356" alt="Image" src="https://github.com/user-attachments/assets/220abc69-7821-43fb-bd09-fabc7f90870e" /> 
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+end.
