@@ -1,0 +1,131 @@
+// DESIGN CODE
+
+module fir_filter #(
+  parameter N = 5,              // Number of taps (coefficients)
+  parameter WIDTH = 8           // Bit width of input/output
+)(
+  input clk,
+  input rst,
+  input signed [WIDTH-1:0] x_in,  // Input sample
+  output reg signed [WIDTH+3:0] y_out  // Output sample (extra bits to avoid overflow)
+);
+
+  // Example FIR coefficients (symmetric filter): h = [1, 2, 3, 2, 1]
+  reg signed [WIDTH-1:0] coeffs [0:N-1];
+  initial begin
+    coeffs[0] = 1;
+    coeffs[1] = 2;
+    coeffs[2] = 3;
+    coeffs[3] = 2;
+    coeffs[4] = 1;
+  end
+
+  // Shift register for input samples
+  reg signed [WIDTH-1:0] shift_reg [0:N-1];
+
+  integer i;
+  always @(posedge clk or posedge rst) begin
+    if (rst) begin
+      for (i = 0; i < N; i = i + 1)
+        shift_reg[i] <= 0;
+    end else begin
+      // Shift input samples
+      for (i = N-1; i > 0; i = i - 1)
+        shift_reg[i] <= shift_reg[i-1];
+      shift_reg[0] <= x_in;
+    end
+  end
+
+  // Multiply and accumulate
+  integer j;
+  always @(posedge clk or posedge rst) begin
+    if (rst) begin
+      y_out <= 0;
+    end else begin
+      y_out <= 0;
+      for (j = 0; j < N; j = j + 1)
+        y_out <= y_out + shift_reg[j] * coeffs[j];
+    end
+  end
+
+endmodule
+---------------------------------------------------------------------------------------------------------
+//TESTBENCH CODE
+
+module tb_fir_filter;
+
+  // Parameters
+  parameter N = 5;
+  parameter WIDTH = 8;
+
+  // Inputs to the FIR filter
+  reg clk;
+  reg rst;
+  reg signed [WIDTH-1:0] x_in;
+
+  // Output from the FIR filter
+  wire signed [WIDTH+3:0] y_out;
+
+  // Instantiate the FIR filter module
+  fir_filter #(N, WIDTH) uut (
+    .clk(clk),
+    .rst(rst),
+    .x_in(x_in),
+    .y_out(y_out)
+  );
+
+  // Clock generation: 10ns period (100MHz)
+  always #5 clk = ~clk;
+
+  // Input signal array
+  reg signed [WIDTH-1:0] input_sequence [0:9];
+  integer i;
+
+  initial begin
+    $display("Starting FIR Filter Testbench...");
+    
+    // Initialize clock and reset
+    clk = 0;
+    rst = 1;
+    x_in = 0;
+
+    // Sample input signal: impulse followed by zeros
+    input_sequence[0] = 1;
+    input_sequence[1] = 2;
+    input_sequence[2] = 3;
+    input_sequence[3] = 0;
+    input_sequence[4] = -1;
+    input_sequence[5] = 0;
+    input_sequence[6] = 2;
+    input_sequence[7] = 0;
+    input_sequence[8] = 0;
+    input_sequence[9] = 0;
+
+    // Hold reset for a few cycles
+    #15 rst = 0;
+
+    // Apply input samples one by one on rising clock edge
+    for (i = 0; i < 10; i = i + 1) begin
+      @(posedge clk);
+      x_in = input_sequence[i];
+      $display("Time: %0t | Input x_in = %d | Output y_out = %d", $time, x_in, y_out);
+    end
+
+    // Wait a few more cycles to observe output tail
+    repeat (5) begin
+      @(posedge clk);
+      x_in = 0;
+      $display("Time: %0t | Input x_in = %d | Output y_out = %d", $time, x_in, y_out);
+    end
+
+    $display("Testbench finished.");
+    $finish;
+  end
+  initial begin
+    $dumpfile("fir_filter.vcd");
+    $dumpvars();
+  end
+endmodule
+--------------------------------------------------------------------------------------------------------------
+###OUTPUT WAVEFORM:
+
